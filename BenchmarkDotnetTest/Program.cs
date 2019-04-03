@@ -10,50 +10,32 @@ namespace BenchmarkDotNetTest
 
     public class ParallelTesting
     {
-        private int[] N = { 1000, 10000, 100000 };
-        private int ITEMS;
-        private readonly int[] arr = null;
+        [Params(1000, 10000, 100000)]
+        public int N { get; set; }
+
+        private int[] arr = null;
         private int partSize;
 
         private object _lock = new object();
 
-        public ParallelTesting()
+        [GlobalSetup]
+        public void Setup()
         {
-            int maxItems = N[2];
-            arr = new int[maxItems];
+            arr = new int[N];
             var rnd = new Random();
-            for (int i = 0; i < maxItems; i++)
+            for (int i = 0; i < N; i++)
             {
                 arr[i] = rnd.Next(1000);
             }
 
-            partSize = maxItems / 4;
+            partSize = N / 4;
         }
 
         [Benchmark]
-        public long SequentialIterationN0()
-        {
-            ITEMS = N[0];
-            var result =  SequentialIteration();
-            return result;
-        }
-        [Benchmark]
-        public long SequentialIterationN1()
-        {
-            ITEMS = N[1];
-            return SequentialIteration();
-        }
-        [Benchmark]
-        public long SequentialIterationN2()
-        {
-            ITEMS = N[2];
-            return SequentialIteration();
-        }
-
         public long SequentialIteration()
         {
             long total = 0;
-            for (int i = 0; i < ITEMS; i++)
+            for (int i = 0; i < N; i++)
             {
                 total += arr[i];
             }
@@ -63,29 +45,11 @@ namespace BenchmarkDotNetTest
 
 
         [Benchmark]
-        public long ThreadPoolWithLockN0()
-        {
-            ITEMS = N[0];
-            return ThreadPoolWithLock();
-        }
-        [Benchmark]
-        public long ThreadPoolWithLockN1()
-        {
-            ITEMS = N[1];
-            return ThreadPoolWithLock();
-        }
-        [Benchmark]
-        public long ThreadPoolWithLockN2()
-        {
-            ITEMS = N[2];
-            return ThreadPoolWithLock();
-        }
-        
         public long ThreadPoolWithLock()
         {
             long total = 0;
             int threads = 4;
-            partSize = ITEMS / threads;
+            partSize = N / threads;
             Task[] tasks = new Task[threads];
             for (int iThread = 0; iThread < threads; iThread++)
             {
@@ -106,29 +70,11 @@ namespace BenchmarkDotNetTest
         }
 
         [Benchmark]
-        public long ThreadPoolWithInterlockedN0()
-        {
-            ITEMS = N[0];
-            return ThreadPoolWithInterlocked();
-        }
-        [Benchmark]
-        public long ThreadPoolWithInterlockedN1()
-        {
-            ITEMS = N[1];
-            return ThreadPoolWithInterlocked();
-        }
-        [Benchmark]
-        public long ThreadPoolWithInterlockedN2()
-        {
-            ITEMS = N[2];
-            return ThreadPoolWithInterlocked();
-        }
-
         public long ThreadPoolWithInterlocked()
         {
             long total = 0;
             int threads = 4;
-            partSize = ITEMS / threads;
+            partSize = N / threads;
             Task[] tasks = new Task[threads];
             for (int iThread = 0; iThread < threads; iThread++)
             {
@@ -149,29 +95,11 @@ namespace BenchmarkDotNetTest
         }
 
         [Benchmark]
-        public long ParallelForN0()
-        {
-            ITEMS = N[0];
-            return ParallelFor();
-        }
-        [Benchmark]
-        public long ParallelForN1()
-        {
-            ITEMS = N[1];
-            return ParallelFor();
-        }
-        [Benchmark]
-        public long ParallelForN2()
-        {
-            ITEMS = N[2];
-            return ParallelFor();
-        }
-
         public long ParallelFor()
         {
             long total = 0;
             int parts = 4;
-            int partSize = ITEMS / parts;
+            int partSize = N / parts;
             var parallel = Parallel.For(0, parts, new ParallelOptions(), (iter) =>
             {
                 for (int j = iter * partSize; j < (iter + 1) * partSize; j++)
@@ -183,31 +111,11 @@ namespace BenchmarkDotNetTest
         }
 
         [Benchmark]
-        public int ParallelForWithLocalFinallyN0()
-        {
-            ITEMS = N[0];
-            return ParallelForWithLocalFinally();
-        }
-
-        [Benchmark]
-        public int ParallelForWithLocalFinallyN1()
-        {
-            ITEMS = N[1];
-            return ParallelForWithLocalFinally();
-        }
-
-        [Benchmark]
-        public int ParallelForWithLocalFinallyN2()
-        {
-            ITEMS = N[2];
-            return ParallelForWithLocalFinally();
-        }
-
         public int ParallelForWithLocalFinally()
         {
             int total = 0;
             int parts = 4;
-            int partSize = ITEMS / parts;
+            int partSize = N / parts;
             var parallel = Parallel.For(0, parts,
                 localInit: () => 0,
                 body: (iterations, state, localTotal) =>
@@ -218,11 +126,11 @@ namespace BenchmarkDotNetTest
                      }
                      return localTotal;
                  },
-                localFinally:(localTotal) =>
-                {
-                    total += localTotal;
-                });
-                return total;
+                localFinally: (localTotal) =>
+                 {
+                     total += localTotal;
+                 });
+            return total;
         }
     }
 
